@@ -185,16 +185,17 @@ class Client:
         # for name in paramses[0].keys():
         #     if name in dict_my_params:
         #         dict_my_params[name].data.zero_()
-        for name in paramses[0].keys():
-            if name in dict_my_params:
-                dict_my_params[name].data = dict_my_params[name].data * 4 / 5
+
+        # for name in paramses[0].keys():
+        #     if name in dict_my_params:
+        #         dict_my_params[name].data = dict_my_params[name].data * 4 / 5
 
         for i, repu in enumerate(repus):
             params = paramses[i]
 
             for name, param in params.items():
                 if name in dict_my_params:
-                    dict_my_params[name].data.add_(repu * param.data / 5)
+                    dict_my_params[name].data.add_(repu * param.data)
 
         self.model.load_state_dict(dict_my_params)
 

@@ -120,12 +120,17 @@ if __name__ == "__main__":
                 #print("tips: ", tip1, tip2)
 
                 parents = [nodes[tip1], nodes[tip2]]  # TODO: numpy
-                acc_sum = sorted_accs[0][1] + sorted_accs[1][1]
-                repus = [sorted_accs[0][1] / acc_sum, sorted_accs[1][1] / acc_sum]
-                parent_ids = [p.get_id() for p in parents]
-                old_parents.update(parent_ids)
-                f.extend(parent_ids)
-                t.extend([global_id, global_id])
+                # acc_sum = sorted_accs[0][1] + sorted_accs[1][1]
+                # repus = [sorted_accs[0][1] / acc_sum, sorted_accs[1][1] / acc_sum]
+                repus = [1, 0]
+                # parent_ids = [p.get_id() for p in parents]
+                # old_parents.update(parent_ids)
+                parent_id = parents[0].get_id()
+                old_parents.add(parent_id)
+                # f.extend(parent_ids)
+                f.append(parent_id)
+                # t.extend([global_id, global_id])
+                t.append(global_id)
 
             """train"""
             client.set_average_weights(
