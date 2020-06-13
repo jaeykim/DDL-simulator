@@ -29,8 +29,8 @@ class Client:
 
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # Setup cuda device for BERT training, argument -c, --cuda should be true
-        cuda_condition = torch.cuda.is_available() and with_cuda
-        self.device = torch.device("cuda:0" if cuda_condition else "cpu")
+        # cuda_condition = torch.cuda.is_available() and with_cuda
+        # self.device = torch.device("cuda:0" if cuda_condition else "cpu")
 
         self.trainset = trainset
         if self.trainset is not None:
@@ -41,18 +41,19 @@ class Client:
             self.testloader = torch.utils.data.DataLoader(dataset=self.testset, batch_size=4,
                                                           shuffle=False, num_workers=2)
 
-        # self.model = net
-        self.model = net.to(self.device)
+        self.model = net
+        # self.model = net.to(self.device)
 
         # Distributed GPU training if CUDA can detect more than 1 GPU
-        if with_cuda and torch.cuda.device_count() > 1:
-            print("Using %d GPUS for Model" % torch.cuda.device_count())
-            self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
+        # if with_cuda and torch.cuda.device_count() > 1:
+        #     print("Using %d GPUS for Model" % torch.cuda.device_count())
+        #     self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
 
-        self.criterion = nn.CrossEntropyLoss()
-        # self.criterion = nn.NLLLoss(ignore_index=0)
-        # self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
+        # self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.NLLLoss(ignore_index=0)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+        # self.optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
+        # self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
 
         assert(_id != None)
         self._id = _id  # TODO: assert error, global_id
@@ -81,8 +82,8 @@ class Client:
             running_loss = 0.0
             for i, data in enumerate(self.trainloader, 0):
                 # [inputs, labels]의 목록인 data로부터 입력을 받은 후;
-                # inputs, labels = data
-                inputs, labels = data[0].to(self.device), data[1].to(self.device)  # TODO: GPU
+                inputs, labels = data
+                # inputs, labels = data[0].to(self.device), data[1].to(self.device)  # TODO: GPU
 
                 # 변화도(Gradient) 매개변수를 0으로 만들고
                 self.optimizer.zero_grad()
@@ -126,8 +127,8 @@ class Client:
         loss = 0
         with torch.no_grad():
             for data in self.testloader:
-                # images, labels = data
-                images, labels = data[0].to(self.device), data[1].to(self.device)  # TODO: GPU
+                images, labels = data
+                # images, labels = data[0].to(self.device), data[1].to(self.device)  # TODO: GPU
 
                 outputs = self.model(images)
 
@@ -186,16 +187,16 @@ class Client:
         #     if name in dict_my_params:
         #         dict_my_params[name].data.zero_()
 
-        # for name in paramses[0].keys():
-        #     if name in dict_my_params:
-        #         dict_my_params[name].data = dict_my_params[name].data * 4 / 5
+        for name in paramses[0].keys():
+            if name in dict_my_params:
+                dict_my_params[name].data = dict_my_params[name].data * 4 / 5
 
         for i, repu in enumerate(repus):
             params = paramses[i]
 
             for name, param in params.items():
                 if name in dict_my_params:
-                    dict_my_params[name].data.add_(repu * param.data)
+                    dict_my_params[name].data.add_(repu * param.data / 5)
 
         self.model.load_state_dict(dict_my_params)
 
