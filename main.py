@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 [parents[0].get_weights(), parents[1].get_weights()],
                 repus)
 
-            client.train(r=r, epochs=1, log_flag=True)
+            client.train(r=r, epochs=1, logs=10000/ns, log_flag=True)
             current_accs.append(client.eval(r=r, log_flag=True))
 
             """create Node"""

@@ -49,8 +49,8 @@ class Client:
         #     print("Using %d GPUS for Model" % torch.cuda.device_count())
         #     self.model = nn.DataParallel(self.model, device_ids=cuda_devices)
 
-        # self.criterion = nn.CrossEntropyLoss()
-        self.criterion = nn.NLLLoss(ignore_index=0)
+        self.criterion = nn.CrossEntropyLoss()
+        # self.criterion = nn.NLLLoss(ignore_index=0)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
         # self.optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
         # self.optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
@@ -58,7 +58,8 @@ class Client:
         assert(_id != None)
         self._id = _id  # TODO: assert error, global_id
 
-        self.PATH = "clients/" + str(self._id) + "/"  # TODO: the other PATH for log
+        # self.PATH = "clients/" + str(self._id) + "/"  # TODO: the other PATH for log
+        self.PATH = "clients/"
         recursive_mkdir(self.PATH)
 
     """ML"""
@@ -102,7 +103,7 @@ class Client:
                         #       (epoch + 1, i + 1, running_loss / logs))
 
                         # name = "train_loss_" + str(r) + "_" + str(epoch) + "_" + str(i) + ".log"
-                        name = "train_loss.log"
+                        name = "client_" + str(self._id) + "_train_loss.log"
                         self.log(name, r, running_loss / logs)
 
                         running_loss = 0.0
@@ -148,7 +149,7 @@ class Client:
 
         if log_flag:
             # name = "test_acc_" + str(r) + ".log"
-            name = "test_acc.log"
+            name = "client_" + str(self._id) + "_test_acc.log"
             self.log(name, r, acc)
 
         return acc

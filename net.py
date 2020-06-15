@@ -42,11 +42,18 @@ class Net(nn.Module):
         return x
 
 
+def log(name: str, r: int, data):
+    with open(name, "a") as f:
+        f.write("%d, %f\n" % (r, data))
+
 if __name__ == "__main__":
     # """GPU"""
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # # CUDA 기기가 존재한다면, 아래 코드가 CUDA 장치를 출력합니다:
     # print(device)
+
+    """remove existing logs"""
+    os.system("rm global_*")
 
     """Preprocess"""
     transform = transforms.Compose(
@@ -77,7 +84,7 @@ if __name__ == "__main__":
 
     """Net"""
     net = Net()
-    # net.to(device)  # TODO: GPU
+    net.to(device)  # TODO: GPU
 
     """load"""
     PATH = './cifar_net.pth'
@@ -92,13 +99,13 @@ if __name__ == "__main__":
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
     """training"""
-    for epoch in range(1):   # 데이터셋을 수차례 반복합니다.
+    for epoch in range(1, 101):   # 데이터셋을 수차례 반복합니다.
 
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # [inputs, labels]의 목록인 data로부터 입력을 받은 후;
-            inputs, labels = data
-            # inputs, labels = data[0].to(device), data[1].to(device)  # TODO: GPU
+            # inputs, labels = data
+            inputs, labels = data[0].to(device), data[1].to(device)  # TODO: GPU
 
             # 변화도(Gradient) 매개변수를 0으로 만들고
             optimizer.zero_grad()
@@ -115,6 +122,26 @@ if __name__ == "__main__":
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
+        name = "global_train_loss.log"
+        log(name, epoch, running_loss / 2000)
+
+        """accuracy"""
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data in testloader:
+                # images, labels = data
+                images, labels = data[0].to(device), data[1].to(device)  # TODO: GPU
+                outputs = net(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        name = "global_test_acc.log"
+        log(name, epoch, 100 * correct / total)
+        print('Accuracy: %d %%' % (
+            100 * correct / total))
+        
 
     print('Finished Training')
 
@@ -138,13 +165,14 @@ if __name__ == "__main__":
     total = 0
     with torch.no_grad():
         for data in testloader:
-            images, labels = data
+            # images, labels = data
+            images, labels = data[0].to(device), data[1].to(device)  # TODO: GPU
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            print(predicted == labels)
-            print((predicted == labels).sum())
-            print((predicted == labels).sum().item())
+            # print(predicted == labels)
+            # print((predicted == labels).sum())
+            # print((predicted == labels).sum().item())
             correct += (predicted == labels).sum().item()
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (
