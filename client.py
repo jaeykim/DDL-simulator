@@ -58,9 +58,10 @@ class Client:
         assert(_id != None)
         self._id = _id  # TODO: assert error, global_id
 
-        # self.PATH = "clients/" + str(self._id) + "/"  # TODO: the other PATH for log
-        self.PATH = "clients/"
-        recursive_mkdir(self.PATH)
+        if _id > 0:
+            # self.PATH = "clients/" + str(self._id) + "/"  # TODO: the other PATH for log
+            self.PATH = "clients/"
+            recursive_mkdir(self.PATH)
 
     """ML"""
 

@@ -4,6 +4,7 @@
 __pycache__/*
 data/
 cifar_net.pth
-clients/
-IOTAtangle/
+clients*/
 dag.png
+visualizer/node_modules
+network.json

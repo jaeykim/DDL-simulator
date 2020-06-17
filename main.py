@@ -12,7 +12,8 @@ import random
 import pickle
 from copy import deepcopy
 
-from dag import Node
+from node import Node
+from network import Network
 from net import Net
 from client import Client
 import arguments
@@ -56,32 +57,32 @@ if __name__ == "__main__":
             trainset=splited_trainset[i],
             testset=splited_testset[i],
             net=Net(),
-            _id=i))
+            _id=i + 1))
 
     tmp_client = Client(  # tmp
         trainset=None,
         testset=splited_testset[i],
         net=Net(),
-        _id=-1)
+        _id=0)
 
     """set DAG"""
-    global_id = 0
-    nodes = []
+    network = Network()
 
     genesis = Node(
+        accuracy="Gen",
         r=0,
-        w=clients[0].get_weights(),
-        _id=global_id)
-    nodes.append(genesis)
-    global_id += 1
+        w=clients[0].get_weights()
+        # _id=global_id
+    )
+    network.insert_tip(genesis)
+    # global_id += 1
 
-    """list for DAG graph"""
-    f = []
-    t = []
+    # """list for DAG graph"""
+    # dag_data = {"nodes": [], "links": []}
 
     """run simulator"""
     # tip_nodes = deepcopy(nodes)  # in DAG
-    tip_nodes = [0]
+    # tip_nodes = [0]
 
     for r in range(1, rs + 1):
         print(">>> Round %5d" % (r))
@@ -92,49 +93,54 @@ if __name__ == "__main__":
 
         current_nodes = []
         current_accs = []
-        old_parents = set()
+        # old_parents = set()
+        # parents = set()
 
         for a in activateds:
             client = clients[a]
 
             """reference"""
             #print("tip_nodes: ", tip_nodes)
+            tip_nodes = network.get_tips()
             if len(tip_nodes) < 2:  # never be 0
-                parents = [nodes[tip_nodes[0]], nodes[tip_nodes[0]]]  # TODO: parameterize
+                tip = tip_nodes[0]
+                parents = [tip, tip]  # TODO: parameterize
                 repus = [0.5, 0.5]
-                old_parents.add(tip_nodes[0])
-                f.append(tip_nodes[0])
-                t.append(global_id)
+                # network.insert_link(tip, )
+
+                # old_parents.add(tips[0])
+                # f.append(tips[0])
+                # t.append(global_id)
             else:
                 # cal. edges
                 accs = []
-                for l in tip_nodes:
-                    tip = nodes[l]
+                for tip_node in network.get_tip_nodes():
+                    # tip = nodes[l]
                     tmp_client.set_dataset(client.trainset, client.testset)
-                    tmp_client.set_weights(tip.get_weights())
-                    accs.append([tip.get_id(), tmp_client.eval(r=-1)])
+                    tmp_client.set_weights(tip_node.get_weights())
+                    accs.append([tip_node.get_id(), tmp_client.eval(r=-1)])
 
                 sorted_accs = sorted(accs, key=lambda l:l[1], reverse=True)
                 #print("sorted_accs: ", sorted_accs)
                 tip1, tip2 = sorted_accs[0][0], sorted_accs[1][0]
                 #print("tips: ", tip1, tip2)
 
-                parents = [nodes[tip1], nodes[tip2]]  # TODO: numpy
+                parents = [tip1, tip2]  # TODO: numpy
                 acc_sum = sorted_accs[0][1] + sorted_accs[1][1]
                 repus = [sorted_accs[0][1] / acc_sum, sorted_accs[1][1] / acc_sum]
                 # repus = [1, 0]
-                parent_ids = [p.get_id() for p in parents]
-                old_parents.update(parent_ids)
+                # parent_ids = [p.get_id() for p in parents]
+                # old_parents.update(parent_ids)
                 # parent_id = parents[0].get_id()
                 # old_parents.add(parent_id)
-                f.extend(parent_ids)
+                # f.extend(parent_ids)
                 # f.append(parent_id)
-                t.extend([global_id, global_id])
+                # t.extend([global_id, global_id])
                 # t.append(global_id)
 
             """train"""
             client.set_average_weights(
-                [parents[0].get_weights(), parents[1].get_weights()],
+                [network.get_node(parents[0]).get_weights(), network.get_node(parents[1]).get_weights()],
                 repus)
 
             client.train(r=r, epochs=1, logs=10000/ns, log_flag=True)
@@ -144,35 +150,43 @@ if __name__ == "__main__":
             new_node = Node(
                 r=r,
                 w=client.get_weights(),
-                _id=global_id,
-                parent=parents,
-                edges=repus)  # TODO: sorted_accs
-            nodes.append(new_node)
+                # _id=global_id,
+                # parent=parents,
+                edges=repus,
+                accuracy=client.eval(r=r, log_flag=True))  # TODO: sorted_accs
+            # nodes.append(new_node)
+            network.insert_tip(new_node)
+            new_id = new_node.get_id()
+            parents = list(set(parents))
+            for parent in parents:
+                network.insert_link(parent, new_id)
 
-            current_nodes.append(global_id)
-            tip_nodes.append(global_id)
+            current_nodes.append(new_id)
+            # tip_nodes.append(global_id)
 
-            global_id += 1
+            # global_id += 1
 
-        for p in old_parents:
-            #print(p)
-            try:
-                tip_nodes.remove(p)
-            except ValueError:
-                pass  # do nothing!
-        tip_nodes.extend(current_nodes)
-        tip_nodes = list(set(tip_nodes))
+        # for p in old_parents:
+        #     #print(p)
+        #     try:
+        #         tip_nodes.remove(p)
+        #     except ValueError:
+        #         pass  # do nothing!
+        # tip_nodes.extend(current_nodes)
+        # tip_nodes = list(set(tip_nodes))
 
         # write from / to
-        with open('dag.data', 'wb') as filehandle:
-            # store the data as binary data stream
-            pickle.dump({"f": f, "t": t}, filehandle)
+        # with open('dag.data', 'wb') as filehandle:
+        #     # store the data as binary data stream
+        #     pickle.dump({"f": f, "t": t}, filehandle)
+
+        network.update()
 
         """log"""
         print(">>> activated_clients:", activateds)
         print(">>> current_nodes:", [d for d in current_nodes])
         print(">>> current_accs:", current_accs)
-        print(">>> tip_nodes:", [t for t in tip_nodes])
+        print(">>> tip_nodes:", network.get_tips())
 
         # tip_nodes = deepcopy(current_nodes)
 

@@ -1,27 +1,33 @@
 """
-DAG (Directed Acyclic Graph)
+Node
 """
 
-
 class Node:
+    global_id = 0
     def __init__(self,
                  r,  # TODO: case None
                  w,  # TODO: gradient
-                 _id=None,  # TODO: case None
+                 accuracy,
+                #  id=None,  # TODO: case None
                  parent: list = [],
                  edges: list = []):
 
-        assert(_id != None)
-        self._id = _id
+        # assert(id != None)
+        self.id = Node.global_id
+        Node.global_id = Node.global_id + 1
+        self.ref = 0
+        self.age = 0
 
         self.r = r
         self.w = w
 
-        self.parent = parent
+        # self.parent = parent
         self.edges = edges
 
+        self.accuracy = accuracy
+
     def get_id(self):
-        return self._id
+        return self.id
 
     def get_weights(self):
         return self.w
